@@ -28,9 +28,12 @@ x-ui.service.*
 # Runtime bind-mount placeholders
 access.log
 error.log
+internal/web/dist
+build
 db
 cert
 pgdata
+x-ui/
 *.db
 *.dump
 
