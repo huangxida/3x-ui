@@ -23,6 +23,7 @@ on:
       - 'frontend/package-lock.json'
       - 'frontend/tsconfig.json'
       - '.nvmrc'
+      - 'internal/**'
       - 'web/**'
       - 'Dockerfile'
       - 'DockerInit.sh'
@@ -117,8 +118,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Stub web/dist for go:embed
-        run: mkdir -p web/dist && touch web/dist/.gitkeep
+      - name: Stub internal/web/dist for go:embed
+        run: mkdir -p internal/web/dist && touch internal/web/dist/.gitkeep
 
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
