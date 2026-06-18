@@ -33,11 +33,11 @@ import {
 import { HttpUtil } from '@/utils';
 import { pauseAnimationsUntilLeave, useTheme } from '@/hooks/useTheme';
 import { useAllSettings } from '@/api/queries/useAllSettings';
+import { formatPanelVersionTag, getPanelReleaseUrl } from '@/lib/panel-release';
 import './AppSidebar.css';
 
 const SIDEBAR_COLLAPSED_KEY = 'isSidebarCollapsed';
 const DONATE_URL = 'https://donate.sanaei.dev/';
-const REPO_URL = 'https://github.com/huangxida/3x-ui';
 const LOGOUT_KEY = '__logout__';
 
 type IconName = 'dashboard' | 'inbound' | 'team' | 'groups' | 'setting' | 'tool' | 'cluster' | 'logout' | 'apidocs' | 'outbound';
@@ -80,8 +80,8 @@ function DonateButton({ ariaLabel }: { ariaLabel: string }) {
 
 function VersionBadge({ version, collapsed }: { version: string; collapsed?: boolean }) {
   if (!version) return null;
-  const label = version.startsWith('v') ? version : `v${version}`;
-  const href = `${REPO_URL}/releases/tag/${encodeURIComponent(label)}`;
+  const label = formatPanelVersionTag(version);
+  const href = getPanelReleaseUrl(version);
   return (
     <a
       href={href}

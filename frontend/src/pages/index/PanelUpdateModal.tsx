@@ -4,6 +4,7 @@ import { CloudDownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 import { HttpUtil, PromiseUtil } from '@/utils';
+import { formatPanelVersionTag } from '@/lib/panel-release';
 import './PanelUpdateModal.css';
 
 export interface PanelUpdateInfo {
@@ -27,6 +28,8 @@ interface PanelUpdateModalProps {
 export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelUpdateModalProps) {
   const { t } = useTranslation();
   const [modal, contextHolder] = Modal.useModal();
+  const currentVersionLabel = formatPanelVersionTag(info.currentVersion || '?');
+  const latestVersionLabel = formatPanelVersionTag(info.latestVersion);
 
   async function pollUntilBack(): Promise<boolean> {
     await PromiseUtil.sleep(5000);
@@ -46,12 +49,12 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
   function updatePanel() {
     modal.confirm({
       title: t('pages.index.panelUpdateDialog'),
-      content: t('pages.index.panelUpdateDialogDesc').replace('#version#', info.latestVersion || ''),
+      content: t('pages.index.panelUpdateDialogDesc').replace('#version#', latestVersionLabel || ''),
       okText: t('confirm'),
       cancelText: t('cancel'),
       onOk: async () => {
         const baseTip = t('pages.index.dontRefresh');
-        const tip = info.latestVersion ? `${baseTip} (${info.latestVersion})` : baseTip;
+        const tip = latestVersionLabel ? `${baseTip} (${latestVersionLabel})` : baseTip;
         onClose();
         onBusy({ busy: true, tip });
         const result = await HttpUtil.post('/panel/api/server/updatePanel');
@@ -87,12 +90,12 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
         <div className="version-list">
           <div className="version-list-item">
             <span>{t('pages.index.currentPanelVersion')}</span>
-            <Tag color="green">v{info.currentVersion || '?'}</Tag>
+            <Tag color="green">{currentVersionLabel}</Tag>
           </div>
           {info.updateAvailable ? (
             <div className="version-list-item">
               <span>{t('pages.index.latestPanelVersion')}</span>
-              <Tag color="purple">{info.latestVersion || '-'}</Tag>
+              <Tag color="purple">{latestVersionLabel || '-'}</Tag>
             </div>
           ) : (
             <div className="version-list-item">

@@ -43,6 +43,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import AppSidebar from '@/layouts/AppSidebar';
 import { LazyMount } from '@/components/utility';
 import { setMessageInstance } from '@/utils/messageBus';
+import { formatPanelVersionTag, getPanelReleaseUrl } from '@/lib/panel-release';
 import StatusCard from './StatusCard';
 import XrayStatusCard from './XrayStatusCard';
 import type { PanelUpdateInfo } from './PanelUpdateModal';
@@ -99,6 +100,11 @@ export default function IndexPage() {
     () => panelUpdateInfo.currentVersion || window.X_UI_CUR_VER || '?',
     [panelUpdateInfo.currentVersion],
   );
+  const displayVersionLabel = useMemo(() => formatPanelVersionTag(displayVersion), [displayVersion]);
+  const latestVersionLabel = useMemo(
+    () => formatPanelVersionTag(panelUpdateInfo.latestVersion),
+    [panelUpdateInfo.latestVersion],
+  );
 
   const setBusy = useCallback(
     ({ busy, tip }: { busy: boolean; tip?: string }) => {
@@ -122,7 +128,7 @@ export default function IndexPage() {
     if (panelUpdateInfo.updateAvailable) {
       setPanelUpdateOpen(true);
     } else {
-      window.open('https://github.com/huangxida/3x-ui/releases', '_blank', 'noopener,noreferrer');
+      window.open(getPanelReleaseUrl(displayVersion), '_blank', 'noopener,noreferrer');
     }
   }
 
@@ -224,8 +230,8 @@ export default function IndexPage() {
                           {isMobile && displayVersion && (
                             <Tag color={panelUpdateInfo.updateAvailable ? 'orange' : 'green'}>
                               {panelUpdateInfo.updateAvailable
-                                ? `v${panelUpdateInfo.latestVersion}`
-                                : `v${displayVersion}`}
+                                ? latestVersionLabel
+                                : displayVersionLabel}
                             </Tag>
                           )}
                         </Space>
@@ -254,8 +260,8 @@ export default function IndexPage() {
                           {!isMobile && (
                             <span>
                               {panelUpdateInfo.updateAvailable
-                                ? `${t('update')} ${panelUpdateInfo.latestVersion}`
-                                : `v${displayVersion}`}
+                                ? `${t('update')} ${latestVersionLabel}`
+                                : displayVersionLabel}
                             </span>
                           )}
                         </Space>,

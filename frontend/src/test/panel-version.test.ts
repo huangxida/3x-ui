@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
+import { formatPanelVersionTag, getPanelReleaseUrl } from '@/lib/panel-release';
 import { isPanelUpdateAvailable } from '@/lib/panel-version';
 
 // Parity with web/service/panel.go isNewerVersion.
@@ -29,5 +30,22 @@ describe('isPanelUpdateAvailable', () => {
   it('falls back to string inequality for non-semver tags', () => {
     expect(isPanelUpdateAvailable('nightly-2', 'nightly-1')).toBe(true);
     expect(isPanelUpdateAvailable('nightly-1', 'nightly-1')).toBe(false);
+  });
+});
+
+describe('panel release links', () => {
+  it('formats semantic versions as fork release tags', () => {
+    expect(formatPanelVersionTag('2.9.0')).toBe('v2.9.0');
+    expect(formatPanelVersionTag('v2.9.0')).toBe('v2.9.0');
+  });
+
+  it('keeps non-semver release tags intact', () => {
+    expect(formatPanelVersionTag('nightly-1')).toBe('nightly-1');
+    expect(formatPanelVersionTag('?')).toBe('?');
+  });
+
+  it('builds release URLs for the fork repository', () => {
+    expect(getPanelReleaseUrl('2.9.0')).toBe('https://github.com/huangxida/3x-ui/releases/tag/v2.9.0');
+    expect(getPanelReleaseUrl('?')).toBe('https://github.com/huangxida/3x-ui/releases');
   });
 });
