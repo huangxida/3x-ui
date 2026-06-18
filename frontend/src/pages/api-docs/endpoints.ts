@@ -861,9 +861,10 @@ export const sections: readonly Section[] = [
       {
         method: 'POST',
         path: '/panel/api/nodes/updatePanel',
-        summary: 'Trigger the official panel self-updater on each given node (downloads the latest release and restarts). Only enabled, online nodes are updated; offline/disabled ones are reported as skipped. Returns a per-node result list.',
+        summary: 'Temporarily disabled. This endpoint is kept for compatibility but currently returns a failure response and does not trigger remote node panel updates.',
+        deprecated: true,
         body: '{\n  "ids": [1, 2, 3]\n}',
-        response: '{\n  "success": true,\n  "obj": [\n    { "id": 1, "name": "de-1", "ok": true },\n    { "id": 2, "name": "fr-1", "ok": false, "error": "node is offline" }\n  ]\n}',
+        response: '{\n  "success": false,\n  "msg": "Update node (node panel update is temporarily disabled)"\n}',
       },
       {
         method: 'GET',
