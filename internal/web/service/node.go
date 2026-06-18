@@ -534,10 +534,15 @@ type NodeUpdateResult struct {
 	Error string `json:"error,omitempty"`
 }
 
+const nodePanelUpdateDisabled = true
+
 // UpdatePanels triggers the official self-updater on each given node. Only
 // enabled, online nodes are eligible — an offline node can't be reached, so it
 // is reported as skipped rather than silently dropped.
 func (s *NodeService) UpdatePanels(ids []int) ([]NodeUpdateResult, error) {
+	if nodePanelUpdateDisabled {
+		return nil, errors.New("node panel update is temporarily disabled")
+	}
 	mgr := runtime.GetManager()
 	if mgr == nil {
 		return nil, fmt.Errorf("runtime manager unavailable")

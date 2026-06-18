@@ -251,7 +251,11 @@ func (a *NodeController) updatePanel(c *gin.Context) {
 		return
 	}
 	results, err := a.nodeService.UpdatePanels(req.Ids)
-	jsonMsgObj(c, I18nWeb(c, "pages.nodes.toasts.updateStarted"), results, err)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.nodes.toasts.update"), err)
+		return
+	}
+	jsonMsgObj(c, I18nWeb(c, "pages.nodes.toasts.updateStarted"), results, nil)
 }
 
 func (a *NodeController) history(c *gin.Context) {
