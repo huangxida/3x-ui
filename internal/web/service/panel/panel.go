@@ -32,9 +32,17 @@ type PanelUpdateInfo struct {
 }
 
 const (
-	panelUpdaterURL      = "https://raw.githubusercontent.com/MHSanaei/3x-ui/main/update.sh"
+	panelRepository      = "huangxida/3x-ui"
 	maxPanelUpdaterBytes = 2 << 20
 )
+
+func panelUpdaterURL() string {
+	return "https://raw.githubusercontent.com/" + panelRepository + "/main/update.sh"
+}
+
+func panelLatestReleaseAPIURL() string {
+	return "https://api.github.com/repos/" + panelRepository + "/releases/latest"
+}
 
 func (s *PanelService) RestartPanel(delay time.Duration) error {
 	go func() {
@@ -58,13 +66,13 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 	return nil
 }
 
-// GetUpdateInfo checks GitHub for the latest 3x-ui release.
+// GetUpdateInfo checks GitHub for the latest fork release.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 	latest, err := fetchLatestPanelVersion()
 	if err != nil {
 		return nil, err
 	}
-	current := config.GetVersion()
+	current := config.GetAssetVersion()
 	return &PanelUpdateInfo{
 		CurrentVersion:  current,
 		LatestVersion:   latest,
@@ -72,7 +80,7 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 	}, nil
 }
 
-// StartUpdate starts the official updater outside of the current web request.
+// StartUpdate starts the fork updater outside of the current web request.
 func (s *PanelService) StartUpdate() error {
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("panel web update is supported only on Linux installations")
@@ -133,7 +141,7 @@ func (s *PanelService) StartUpdate() error {
 
 func downloadPanelUpdater() (string, error) {
 	client := (&service.SettingService{}).NewProxiedHTTPClient(15 * time.Second)
-	resp, err := client.Get(panelUpdaterURL)
+	resp, err := client.Get(panelUpdaterURL())
 	if err != nil {
 		return "", fmt.Errorf("download panel updater: %w", err)
 	}
@@ -171,7 +179,7 @@ func downloadPanelUpdater() (string, error) {
 
 func fetchLatestPanelVersion() (string, error) {
 	client := (&service.SettingService{}).NewProxiedHTTPClient(10 * time.Second)
-	resp, err := client.Get("https://api.github.com/repos/MHSanaei/3x-ui/releases/latest")
+	resp, err := client.Get(panelLatestReleaseAPIURL())
 	if err != nil {
 		return "", err
 	}

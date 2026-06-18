@@ -31,6 +31,15 @@ func TestCompareVersionStringsRejectsUnexpectedFormats(t *testing.T) {
 	}
 }
 
+func TestPanelReleaseURLsUseForkRepository(t *testing.T) {
+	if got, want := panelUpdaterURL(), "https://raw.githubusercontent.com/huangxida/3x-ui/main/update.sh"; got != want {
+		t.Fatalf("panelUpdaterURL() = %q, want %q", got, want)
+	}
+	if got, want := panelLatestReleaseAPIURL(), "https://api.github.com/repos/huangxida/3x-ui/releases/latest"; got != want {
+		t.Fatalf("panelLatestReleaseAPIURL() = %q, want %q", got, want)
+	}
+}
+
 func TestShellQuote(t *testing.T) {
 	if got := shellQuote("/usr/bin/curl"); got != "'/usr/bin/curl'" {
 		t.Fatalf("unexpected quote result: %s", got)
