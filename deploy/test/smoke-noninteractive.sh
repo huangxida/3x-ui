@@ -26,6 +26,7 @@ docker run --rm \
     -v "${REPO_ROOT}/install.sh:/root/install.sh:ro" \
     -e XUI_NONINTERACTIVE=1 \
     -e XUI_SSL_MODE=none \
+    -e XUI_RELEASE_REPO=MHSanaei/3x-ui \
     -e DEBIAN_FRONTEND=noninteractive \
     "$IMAGE" bash -euo pipefail -c '
         apt-get update -qq
