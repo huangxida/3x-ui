@@ -26,6 +26,8 @@ import {
   MoreOutlined,
   PlusOutlined,
   RightOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 
@@ -38,6 +40,7 @@ interface NodeListProps {
   loading?: boolean;
   isMobile?: boolean;
   onAdd: () => void;
+  onMtls: () => void;
   onEdit: (node: NodeRecord) => void;
   onDelete: (node: NodeRecord) => void;
   onProbe: (node: NodeRecord) => void;
@@ -149,6 +152,7 @@ export default function NodeList({
   loading = false,
   isMobile = false,
   onAdd,
+  onMtls,
   onEdit,
   onDelete,
   onProbe,
@@ -225,13 +229,13 @@ export default function NodeList({
       ) : (
         <Space>
           <Tooltip title={t('pages.nodes.probe')}>
-            <Button type="text" size="small" style={{ fontSize: 18 }} icon={<ThunderboltOutlined />} onClick={() => onProbe(record)} />
+            <Button type="text" size="small" style={{ fontSize: 16 }} icon={<ThunderboltOutlined />} onClick={() => onProbe(record)} />
           </Tooltip>
           <Tooltip title={t('edit')}>
-            <Button type="text" size="small" style={{ fontSize: 18 }} icon={<EditOutlined />} onClick={() => onEdit(record)} />
+            <Button type="text" size="small" style={{ fontSize: 16 }} icon={<EditOutlined />} onClick={() => onEdit(record)} />
           </Tooltip>
           <Tooltip title={t('delete')}>
-            <Button type="text" size="small" danger style={{ fontSize: 18 }} icon={<DeleteOutlined />} onClick={() => onDelete(record)} />
+            <Button type="text" size="small" danger style={{ fontSize: 16 }} icon={<DeleteOutlined />} onClick={() => onDelete(record)} />
           </Tooltip>
         </Space>
       ),
@@ -345,15 +349,29 @@ export default function NodeList({
     {
       title: t('clients'),
       align: 'center',
-      width: 160,
+      width: 180,
       render: (_value, record) => (
-        <Space size={4}>
-          <Tag color="green">{record.clientCount || 0}</Tag>
-          {record.onlineCount ? (
-            <Tag color="blue">{record.onlineCount} {t('online')}</Tag>
+        <Space size={2}>
+          <Tag className="client-count-tag" style={{ margin: 0, padding: '0 2px' }}><TeamOutlined /> {record.clientCount || 0}</Tag>
+          {record.activeCount ? (
+            <Tooltip title={t('subscription.active')}>
+              <Tag color="green" className="client-count-tag" style={{ margin: 0, padding: '0 2px' }}>{record.activeCount}</Tag>
+            </Tooltip>
+          ) : null}
+          {record.disabledCount ? (
+            <Tooltip title={t('disabled')}>
+              <Tag className="client-count-tag" style={{ margin: 0, padding: '0 2px' }}>{record.disabledCount}</Tag>
+            </Tooltip>
           ) : null}
           {record.depletedCount ? (
-            <Tag color="red">{record.depletedCount} {t('depleted')}</Tag>
+            <Tooltip title={t('depleted')}>
+              <Tag color="red" className="client-count-tag" style={{ margin: 0, padding: '0 2px' }}>{record.depletedCount}</Tag>
+            </Tooltip>
+          ) : null}
+          {record.onlineCount ? (
+            <Tooltip title={t('online')}>
+              <Tag color="blue" className="client-count-tag" style={{ margin: 0, padding: '0 2px' }}>{record.onlineCount}</Tag>
+            </Tooltip>
           ) : null}
         </Space>
       ),
@@ -380,6 +398,9 @@ export default function NodeList({
       <div className="toolbar">
         <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
           {t('pages.nodes.addNode')}
+        </Button>
+        <Button icon={<SafetyCertificateOutlined />} onClick={onMtls}>
+          {t('pages.nodes.mtls.title')}
         </Button>
       </div>
 
@@ -535,12 +556,18 @@ export default function NodeList({
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">{t('clients')}</span>
-                  <Tag color="green">{statsNode.clientCount || 0}</Tag>
-                  {statsNode.onlineCount ? (
-                    <Tag color="blue">{statsNode.onlineCount} {t('online')}</Tag>
+                  <Tag><TeamOutlined /> {statsNode.clientCount || 0}</Tag>
+                  {statsNode.activeCount ? (
+                    <Tag color="green">{statsNode.activeCount} {t('subscription.active')}</Tag>
+                  ) : null}
+                  {statsNode.disabledCount ? (
+                    <Tag>{statsNode.disabledCount} {t('disabled')}</Tag>
                   ) : null}
                   {statsNode.depletedCount ? (
                     <Tag color="red">{statsNode.depletedCount} {t('depleted')}</Tag>
+                  ) : null}
+                  {statsNode.onlineCount ? (
+                    <Tag color="blue">{statsNode.onlineCount} {t('online')}</Tag>
                   ) : null}
                 </div>
                 <div className="stat-row">
