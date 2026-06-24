@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag name to release, for example v3.3.0."
+        description: "Tag name to release, for example v3.4.0."
         required: true
         type: string
       target_sha:
@@ -24,7 +24,7 @@ jobs:
       TARGET_SHA: ${{ inputs.target_sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.TARGET_SHA }}
           fetch-depth: 0

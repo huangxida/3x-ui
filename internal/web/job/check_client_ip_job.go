@@ -31,8 +31,8 @@ type IPWithTimestamp struct {
 
 // CheckClientIpJob monitors client IP addresses and manages IP blocking based
 // on configured limits. The per-client IPs come from the core's online-stats
-// API when the running core supports it (no access log needed), falling back
-// to access-log parsing on older cores.
+// API; no access log is involved. On a core too old to expose that API the job
+// simply skips the run (the bundled core always supports it).
 type CheckClientIpJob struct {
 	lastClear     int64
 	disAllowedIps []string
@@ -57,13 +57,13 @@ func (j *CheckClientIpJob) Run() {
 	}
 
 	fail2BanEnabled := isFail2BanEnabled()
-	hasLimit := fail2BanEnabled && j.hasLimitIp()
-	f2bInstalled := false
-	if hasLimit {
-		f2bInstalled = j.checkFail2BanInstalled()
-	}
 
 	if observed, apiMode := j.collectFromOnlineAPI(); apiMode {
+		hasLimit := fail2BanEnabled && j.hasLimitIp()
+		f2bInstalled := false
+		if hasLimit {
+			f2bInstalled = j.checkFail2BanInstalled()
+		}
 		if fail2BanEnabled {
 			j.processObserved(observed, j.resolveEnforce(hasLimit, f2bInstalled), true)
 		}
@@ -78,7 +78,12 @@ func (j *CheckClientIpJob) Run() {
 	}
 
 	shouldClearAccessLog := false
+	hasLimit := fail2BanEnabled && j.hasLimitIp()
 	isAccessLogAvailable := j.checkAccessLogAvailable(hasLimit)
+	f2bInstalled := false
+	if hasLimit && isAccessLogAvailable {
+		f2bInstalled = j.checkFail2BanInstalled()
+	}
 
 	if fail2BanEnabled && isAccessLogAvailable {
 		shouldClearAccessLog = j.processLogFile(j.resolveEnforce(hasLimit, f2bInstalled))
@@ -140,7 +145,7 @@ func (j *CheckClientIpJob) clearAccessLog() {
 		return
 	}
 
-	logAccessP, err := os.OpenFile(xray.GetAccessPersistentLogPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	logAccessP, err := os.OpenFile(accessPersistentLogPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	j.checkError(err)
 	defer logAccessP.Close()
 
@@ -160,11 +165,15 @@ func (j *CheckClientIpJob) clearAccessLog() {
 	j.lastClear = time.Now().Unix()
 }
 
+func accessPersistentLogPath() string {
+	return config.GetLogFolder() + "/3xipl-ap.log"
+}
+
 func (j *CheckClientIpJob) hasLimitIp() bool {
 	db := database.GetDB()
 	var inbounds []*model.Inbound
 
-	err := db.Model(model.Inbound{}).Find(&inbounds).Error
+	err := db.Model(model.Inbound{}).Where("settings LIKE ?", "%limitIp%").Find(&inbounds).Error
 	if err != nil {
 		return false
 	}
@@ -190,7 +199,6 @@ func (j *CheckClientIpJob) hasLimitIp() bool {
 }
 
 func (j *CheckClientIpJob) processLogFile(enforce bool) bool {
-
 	ipRegex := regexp.MustCompile(`from (?:tcp:|udp:)?\[?([0-9a-fA-F\.:]+)\]?:\d+ accepted`)
 	emailRegex := regexp.MustCompile(`email: (.+)$`)
 	timestampRegex := regexp.MustCompile(`^(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})`)
@@ -199,7 +207,6 @@ func (j *CheckClientIpJob) processLogFile(enforce bool) bool {
 	file, _ := os.Open(accessLogPath)
 	defer file.Close()
 
-	// Track IPs with their last seen timestamp
 	inboundClientIps := make(map[string]map[string]int64, 100)
 
 	scanner := bufio.NewScanner(file)
@@ -212,7 +219,6 @@ func (j *CheckClientIpJob) processLogFile(enforce bool) bool {
 		}
 
 		ip := ipMatches[1]
-
 		if ip == "127.0.0.1" || ip == "::1" {
 			continue
 		}
@@ -223,7 +229,6 @@ func (j *CheckClientIpJob) processLogFile(enforce bool) bool {
 		}
 		email := emailMatches[1]
 
-		// Extract timestamp from log line
 		var timestamp int64
 		timestampMatches := timestampRegex.FindStringSubmatch(line)
 		if len(timestampMatches) >= 2 {
@@ -240,7 +245,6 @@ func (j *CheckClientIpJob) processLogFile(enforce bool) bool {
 		if _, exists := inboundClientIps[email]; !exists {
 			inboundClientIps[email] = make(map[string]int64)
 		}
-		// Update timestamp - keep the latest
 		if existingTime, ok := inboundClientIps[email][ip]; !ok || timestamp > existingTime {
 			inboundClientIps[email][ip] = timestamp
 		}
@@ -254,11 +258,15 @@ func (j *CheckClientIpJob) processLogFile(enforce bool) bool {
 
 // processObserved runs collection + enforcement for one scan's observations
 // (email -> ip -> last-seen unix seconds). observedAreLive marks the
-// observations as live connections (online-stats API) rather than recent log
-// lines: live entries bypass the stale cutoff, since a connection that opened
-// hours ago is still live even though its timestamp is old.
+// observations as live connections, which bypass the stale cutoff: a connection
+// that opened hours ago is still live even though its timestamp is old. The
+// online-stats API always reports live connections, so the job passes true.
 func (j *CheckClientIpJob) processObserved(observed map[string]map[string]int64, enforce, observedAreLive bool) bool {
 	shouldCleanLog := false
+	now := time.Now().Unix()
+	// attribution accumulates this scan's local observations per email so they can
+	// be recorded under this panel's own guid for cross-node IP attribution.
+	attribution := make(map[string][]model.ClientIpEntry, len(observed))
 	for email, ipTimestamps := range observed {
 
 		// The observations can still reference a client that was just renamed
@@ -278,8 +286,20 @@ func (j *CheckClientIpJob) processObserved(observed map[string]map[string]int64,
 
 		// Convert to IPWithTimestamp slice
 		ipsWithTime := make([]IPWithTimestamp, 0, len(ipTimestamps))
+		attrEntries := make([]model.ClientIpEntry, 0, len(ipTimestamps))
 		for ip, timestamp := range ipTimestamps {
 			ipsWithTime = append(ipsWithTime, IPWithTimestamp{IP: ip, Timestamp: timestamp})
+			// Live API observations may carry an old lastSeen (connection start),
+			// so stamp attribution with now; otherwise the stale cutoff would evict
+			// an IP that is connected right now.
+			attrTs := timestamp
+			if observedAreLive {
+				attrTs = now
+			}
+			attrEntries = append(attrEntries, model.ClientIpEntry{IP: ip, Timestamp: attrTs})
+		}
+		if len(attrEntries) > 0 {
+			attribution[email] = attrEntries
 		}
 
 		clientIpsRecord, err := j.getInboundClientIps(email)
@@ -291,7 +311,25 @@ func (j *CheckClientIpJob) processObserved(observed map[string]map[string]int64,
 		shouldCleanLog = j.updateInboundClientIps(clientIpsRecord, inbound, email, ipsWithTime, enforce, observedAreLive) || shouldCleanLog
 	}
 
+	j.recordLocalAttribution(attribution)
+
 	return shouldCleanLog
+}
+
+// recordLocalAttribution stores this scan's local observations under this panel's
+// own guid so a parent panel can attribute each IP to the node it is on.
+// Best-effort: attribution is advisory and must never block IP-limit enforcement.
+func (j *CheckClientIpJob) recordLocalAttribution(attribution map[string][]model.ClientIpEntry) {
+	if len(attribution) == 0 {
+		return
+	}
+	guid, err := (&service.SettingService{}).GetPanelGuid()
+	if err != nil || guid == "" {
+		return
+	}
+	if err := (&service.InboundService{}).RecordLocalClientIps(guid, attribution); err != nil {
+		logger.Debug("[LimitIP] record local ip attribution failed:", err)
+	}
 }
 
 // mergeClientIps folds this scan's observations into the persisted set,
@@ -654,14 +692,40 @@ func getAPIPortFromConfigData(configData []byte) (int, error) {
 	return 0, errors.New("api inbound port not found")
 }
 
+// getInboundByEmail resolves the inbound that owns a client email. It prefers
+// the exact clients/client_inbounds relation; a substring "settings LIKE
+// %email%" can match the wrong inbound (an email that is a substring of another,
+// or text that merely appears elsewhere in the settings JSON). The LIKE + JSON
+// scan stays only as a fallback for clients not yet present in the relation, so
+// nothing regresses when the join finds no row.
 func (j *CheckClientIpJob) getInboundByEmail(clientEmail string) (*model.Inbound, error) {
 	db := database.GetDB()
 	inbound := &model.Inbound{}
 
-	err := db.Model(&model.Inbound{}).Where("settings LIKE ?", "%"+clientEmail+"%").First(inbound).Error
-	if err != nil {
-		return nil, err
+	err := db.Model(&model.Inbound{}).
+		Joins("JOIN client_inbounds ON client_inbounds.inbound_id = inbounds.id").
+		Joins("JOIN clients ON clients.id = client_inbounds.client_id").
+		Where("clients.email = ?", clientEmail).
+		First(inbound).Error
+	if err == nil {
+		return inbound, nil
 	}
 
-	return inbound, nil
+	var candidates []model.Inbound
+	if listErr := db.Model(&model.Inbound{}).Where("settings LIKE ?", "%"+clientEmail+"%").Find(&candidates).Error; listErr != nil {
+		return nil, listErr
+	}
+	for i := range candidates {
+		settings := map[string][]model.Client{}
+		if jsonErr := json.Unmarshal([]byte(candidates[i].Settings), &settings); jsonErr != nil {
+			continue
+		}
+		for _, client := range settings["clients"] {
+			if client.Email == clientEmail {
+				return &candidates[i], nil
+			}
+		}
+	}
+
+	return nil, err
 }
