@@ -5,14 +5,17 @@ import (
 	"testing"
 )
 
-func TestGetAssetVersionFallsBackToVersion(t *testing.T) {
-	old := AssetVersion
+func TestGetAssetVersionFallsBackToPanelVersion(t *testing.T) {
+	oldAssetVersion := AssetVersion
+	oldBuildCommit := buildCommit
 	AssetVersion = ""
-	defer func() {
-		AssetVersion = old
-	}()
+	buildCommit = ""
+	t.Cleanup(func() {
+		AssetVersion = oldAssetVersion
+		buildCommit = oldBuildCommit
+	})
 
-	if got, want := GetAssetVersion(), GetVersion(); got != want {
+	if got, want := GetAssetVersion(), GetPanelVersion(); got != want {
 		t.Fatalf("GetAssetVersion() = %q, want %q", got, want)
 	}
 }
@@ -26,6 +29,26 @@ func TestGetAssetVersionUsesOverride(t *testing.T) {
 
 	if got, want := GetAssetVersion(), "test-build-123"; got != want {
 		t.Fatalf("GetAssetVersion() = %q, want %q", got, want)
+	}
+}
+
+func TestGetPanelVersion(t *testing.T) {
+	orig := buildCommit
+	t.Cleanup(func() { buildCommit = orig })
+
+	buildCommit = ""
+	if got := GetPanelVersion(); got != GetBaseVersion() {
+		t.Fatalf("stable build: GetPanelVersion = %q, want %q", got, GetBaseVersion())
+	}
+
+	buildCommit = "1d1128cf"
+	if got := GetPanelVersion(); got != "dev+1d1128cf" {
+		t.Fatalf("dev build: GetPanelVersion = %q, want %q", got, "dev+1d1128cf")
+	}
+
+	buildCommit = "1d1128cf945c4615efa05cf41ba7fa766e2ee428"
+	if got := GetPanelVersion(); got != "dev+1d1128cf" {
+		t.Fatalf("dev build (full sha): GetPanelVersion = %q, want %q", got, "dev+1d1128cf")
 	}
 }
 
