@@ -33,9 +33,10 @@ import {
 } from '@ant-design/icons';
 
 import { HttpUtil } from '@/utils';
+import { formatPanelVersion } from '@/lib/panel-version';
 import { pauseAnimationsUntilLeave, useTheme } from '@/hooks/useTheme';
 import { useAllSettings } from '@/api/queries/useAllSettings';
-import { formatPanelVersionTag, getPanelReleaseUrl } from '@/lib/panel-release';
+import { getPanelReleaseUrl } from '@/lib/panel-release';
 import './AppSidebar.css';
 
 const SIDEBAR_COLLAPSED_KEY = 'isSidebarCollapsed';
@@ -84,7 +85,7 @@ function DonateButton({ ariaLabel }: { ariaLabel: string }) {
 
 function VersionBadge({ version, collapsed }: { version: string; collapsed?: boolean }) {
   if (!version) return null;
-  const label = formatPanelVersionTag(version);
+  const label = formatPanelVersion(version);
   const href = getPanelReleaseUrl(version);
   return (
     <a
