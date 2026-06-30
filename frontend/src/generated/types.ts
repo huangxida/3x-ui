@@ -22,6 +22,7 @@ export interface AllSetting {
   ldapFlagField: string;
   ldapHost: string;
   ldapInboundTags: string;
+  ldapInsecureSkipVerify: boolean;
   ldapInvertFlag: boolean;
   ldapPassword: string;
   ldapPort: number;
@@ -125,6 +126,7 @@ export interface AllSettingView {
   ldapFlagField: string;
   ldapHost: string;
   ldapInboundTags: string;
+  ldapInsecureSkipVerify: boolean;
   ldapInvertFlag: boolean;
   ldapPassword: string;
   ldapPort: number;
@@ -222,6 +224,7 @@ export interface ApiTokenView {
 }
 
 export interface Client {
+  allowedIPs?: string[];
   auth?: string;
   comment: string;
   created_at?: number;
@@ -231,8 +234,12 @@ export interface Client {
   flow?: string;
   group?: string;
   id?: string;
+  keepAlive?: number;
   limitIp: number;
   password?: string;
+  preSharedKey?: string;
+  privateKey?: string;
+  publicKey?: string;
   reset: number;
   reverse?: ClientReverse | null;
   security: string;
@@ -250,6 +257,7 @@ export interface ClientInbound {
 }
 
 export interface ClientRecord {
+  allowedIPs: string;
   auth: string;
   comment: string;
   createdAt: number;
@@ -259,8 +267,12 @@ export interface ClientRecord {
   flow: string;
   group: string;
   id: number;
+  keepAlive: number;
   limitIp: number;
   password: string;
+  preSharedKey: string;
+  privateKey: string;
+  publicKey: string;
   reset: number;
   reverse: unknown;
   security: string;
@@ -391,6 +403,9 @@ export interface InboundOption {
   ssMethod: string;
   tag: string;
   tlsFlowCapable: boolean;
+  wgDns?: string;
+  wgMtu?: number;
+  wgPublicKey?: string;
 }
 
 export interface Msg {
@@ -462,6 +477,27 @@ export interface ProbeResultUI {
   xrayError: string;
   xrayState: string;
   xrayVersion: string;
+}
+
+export interface RealityScanResult {
+  alpn: string;
+  certIssuer: string;
+  certSubject: string;
+  certValid: boolean;
+  curveID: string;
+  feasible: boolean;
+  h2: boolean;
+  host: string;
+  ip: string;
+  latencyMs: number;
+  notAfter: string;
+  port: number;
+  reason: string;
+  serverNames: string[];
+  target: string;
+  tls13: boolean;
+  tlsVersion: string;
+  x25519: boolean;
 }
 
 export interface Setting {
