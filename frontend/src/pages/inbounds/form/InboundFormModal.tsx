@@ -18,6 +18,7 @@ import {
 } from 'antd';
 
 import { HttpUtil, NumberFormatter, RandomUtil, SizeFormatter, Wireguard } from '@/utils';
+import type { RealityScanResult } from '@/generated/types';
 import {
   rawInboundToFormValues,
   formValuesToWirePayload,
@@ -175,6 +176,8 @@ export default function InboundFormModal({
   const [messageApi, messageContextHolder] = message.useMessage();
   const [form] = Form.useForm<InboundFormValues>();
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<RealityScanResult | null>(null);
   const {
     fallbacks,
     fallbackChildOptions,
@@ -242,7 +245,9 @@ export default function InboundFormModal({
     clearRealityKeypair,
     genMldsa65,
     clearMldsa65,
-    randomizeRealityTarget,
+    scanRealityTarget,
+    scanRealityCandidates,
+    applyRealityScanResult,
     randomizeShortIds,
     getNewEchCert,
     clearEchCert,
@@ -251,7 +256,7 @@ export default function InboundFormModal({
     setCertFromPanel,
     clearCertFiles,
     onSecurityChange,
-  } = useSecurityActions({ form, setSaving, messageApi, nodeId: typeof wNodeId === 'number' ? wNodeId : null });
+  } = useSecurityActions({ form, setSaving, messageApi, nodeId: typeof wNodeId === 'number' ? wNodeId : null, setScanResult, setScanning });
 
 
   const toggleSockopt = (on: boolean) => {
@@ -272,12 +277,6 @@ export default function InboundFormModal({
   const regenInboundWg = () => {
     const kp = Wireguard.generateKeypair();
     form.setFieldValue(['settings', 'secretKey'], kp.privateKey);
-  };
-
-  const regenWgPeerKeypair = (peerName: number) => {
-    const kp = Wireguard.generateKeypair();
-    form.setFieldValue(['settings', 'peers', peerName, 'privateKey'], kp.privateKey);
-    form.setFieldValue(['settings', 'peers', peerName, 'publicKey'], kp.publicKey);
   };
 
   const matchesVlessAuth = (
@@ -348,6 +347,7 @@ export default function InboundFormModal({
       : buildAddModeValues();
     form.resetFields();
     form.setFieldsValue(initial);
+    setScanResult(null);
     const initialTag = (initial.tag ?? '') as string;
     autoTagRef.current = isAutoInboundTag(initialTag, {
       port: initial.port ?? 0,
@@ -715,7 +715,7 @@ export default function InboundFormModal({
 
   const protocolTab = (
     <>
-      {protocol === Protocols.WIREGUARD && <WireguardFields wgPubKey={wgPubKey} regenInboundWg={regenInboundWg} regenWgPeerKeypair={regenWgPeerKeypair} />}
+      {protocol === Protocols.WIREGUARD && <WireguardFields wgPubKey={wgPubKey} regenInboundWg={regenInboundWg} />}
 
       {protocol === Protocols.TUN && <TunFields />}
 
@@ -916,7 +916,11 @@ export default function InboundFormModal({
       {security === 'reality' && (
         <RealityForm
           saving={saving}
-          randomizeRealityTarget={randomizeRealityTarget}
+          scanning={scanning}
+          scanResult={scanResult}
+          scanRealityTarget={scanRealityTarget}
+          scanRealityCandidates={scanRealityCandidates}
+          applyRealityScanResult={applyRealityScanResult}
           randomizeShortIds={randomizeShortIds}
           genRealityKeypair={genRealityKeypair}
           clearRealityKeypair={clearRealityKeypair}

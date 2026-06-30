@@ -2,6 +2,7 @@ package job
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -184,7 +185,7 @@ func (j *CheckClientIpJob) hasLimitIp() bool {
 		}
 
 		settings := map[string][]model.Client{}
-		json.Unmarshal([]byte(inbound.Settings), &settings)
+		_ = json.Unmarshal([]byte(inbound.Settings), &settings)
 		clients := settings["clients"]
 
 		for _, client := range clients {
@@ -304,7 +305,7 @@ func (j *CheckClientIpJob) processObserved(observed map[string]map[string]int64,
 
 		clientIpsRecord, err := j.getInboundClientIps(email)
 		if err != nil {
-			j.addInboundClientIps(email, ipsWithTime)
+			_ = j.addInboundClientIps(email, ipsWithTime)
 			continue
 		}
 
@@ -392,7 +393,7 @@ func (j *CheckClientIpJob) checkFail2BanInstalled() bool {
 
 	cmd := "fail2ban-client"
 	args := []string{"-h"}
-	err := exec.Command(cmd, args...).Run()
+	err := exec.CommandContext(context.Background(), cmd, args...).Run()
 	return err == nil
 }
 
@@ -476,7 +477,7 @@ func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.Inboun
 	}
 
 	settings := map[string][]model.Client{}
-	json.Unmarshal([]byte(inbound.Settings), &settings)
+	_ = json.Unmarshal([]byte(inbound.Settings), &settings)
 	clients := settings["clients"]
 
 	// Find the client's IP limit
@@ -503,7 +504,7 @@ func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.Inboun
 	// Parse old IPs from database
 	var oldIpsWithTime []IPWithTimestamp
 	if inboundClientIps.Ips != "" {
-		json.Unmarshal([]byte(inboundClientIps.Ips), &oldIpsWithTime)
+		_ = json.Unmarshal([]byte(inboundClientIps.Ips), &oldIpsWithTime)
 	}
 
 	ipMap := mergeClientIps(oldIpsWithTime, newIpsWithTime, time.Now().Unix()-ipStaleAfterSeconds, observedAreLive)
@@ -524,7 +525,7 @@ func (j *CheckClientIpJob) updateInboundClientIps(inboundClientIps *model.Inboun
 	if len(bannedLive) > 0 {
 		shouldCleanLog = true
 
-		logIpFile, err := os.OpenFile(xray.GetIPLimitLogPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		logIpFile, err := os.OpenFile(xray.GetIPLimitLogPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 		if err != nil {
 			logger.Errorf("failed to open IP limit log file: %s", err)
 			return false
@@ -586,7 +587,7 @@ func (j *CheckClientIpJob) disconnectClientTemporarily(inbound *model.Inbound, c
 		if client.Email == clientEmail {
 			// Convert client to map for API
 			clientBytes, _ := json.Marshal(client)
-			json.Unmarshal(clientBytes, &clientConfig)
+			_ = json.Unmarshal(clientBytes, &clientConfig)
 			break
 		}
 	}

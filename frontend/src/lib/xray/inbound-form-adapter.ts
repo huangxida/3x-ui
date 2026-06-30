@@ -11,6 +11,7 @@ import {
   TrojanClientSchema,
   VlessClientSchema,
   VmessClientSchema,
+  WireguardClientSchema,
 } from '@/schemas/protocols/inbound';
 import type { StreamSettings } from '@/schemas/api/inbound';
 import type { Sniffing } from '@/schemas/primitives';
@@ -252,6 +253,7 @@ function clientSchemaForProtocol(protocol: string): z.ZodType | null {
     case 'trojan': return TrojanClientSchema;
     case 'shadowsocks': return ShadowsocksClientSchema;
     case 'hysteria': return HysteriaClientSchema;
+    case 'wireguard': return WireguardClientSchema;
     default: return null;
   }
 }

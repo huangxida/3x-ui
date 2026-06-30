@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -58,9 +59,9 @@ func isValidDeviceName(dev string) bool {
 		return false
 	}
 	for _, r := range dev {
-		if !(r >= 'a' && r <= 'z') &&
-			!(r >= 'A' && r <= 'Z') &&
-			!(r >= '0' && r <= '9') &&
+		if (r < 'a' || r > 'z') &&
+			(r < 'A' || r > 'Z') &&
+			(r < '0' || r > '9') &&
 			r != '-' && r != '_' && r != '.' {
 			return false
 		}
@@ -113,7 +114,7 @@ func mbpsToKbit(mbps int) int {
 }
 
 func runCmd(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(context.Background(), name, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -334,7 +335,7 @@ func formatSelectors(selectors []tcSelector) string {
 }
 
 func tcShowQdisc(dev string) string {
-	out, err := exec.Command("tc", "qdisc", "show", "dev", dev).Output()
+	out, err := exec.CommandContext(context.Background(), "tc", "qdisc", "show", "dev", dev).Output()
 	if err != nil {
 		return ""
 	}
@@ -342,7 +343,7 @@ func tcShowQdisc(dev string) string {
 }
 
 func tcShowFilters(dev string, parent string) string {
-	out, err := exec.Command("tc", "filter", "show", "dev", dev, "parent", parent).Output()
+	out, err := exec.CommandContext(context.Background(), "tc", "filter", "show", "dev", dev, "parent", parent).Output()
 	if err != nil {
 		return ""
 	}
