@@ -5,6 +5,8 @@ name: Deploy Smoke Tests
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "install.sh"
       - "deploy/**"
