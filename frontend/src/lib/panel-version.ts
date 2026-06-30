@@ -14,6 +14,9 @@ function parseVersionParts(version: string): [number, number, number] | null {
   return [out[0], out[1], out[2]];
 }
 
+const DATE_RELEASE_TAG_RE = /^\d{4}\.\d{2}\.\d{2}$/;
+const SEMVER_RELEASE_TAG_RE = /^\d+\.\d+\.\d+(?:[-+].*)?$/;
+
 // Format a panel version for display. Dev builds report a "dev+<commit>"
 // identity (see config.GetPanelVersion); show those — and any other
 // non-numeric label — verbatim. Semantic versions get a single normalized "v"
@@ -23,7 +26,8 @@ export function formatPanelVersion(version: string | undefined | null): string {
   const v = (version || '').trim();
   if (!v) return '';
   const normalized = v.replace(/^v/i, '');
-  return /^\d/.test(normalized) ? `v${normalized}` : v;
+  if (DATE_RELEASE_TAG_RE.test(normalized)) return normalized;
+  return SEMVER_RELEASE_TAG_RE.test(normalized) ? `v${normalized}` : v;
 }
 
 export function isPanelUpdateAvailable(latest: string, current: string): boolean {
