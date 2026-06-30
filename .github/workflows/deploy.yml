@@ -260,3 +260,58 @@ jobs:
               "${package_endpoint}/${id}" \
               --silent
           done
+
+  release:
+    name: Create GitHub Release
+    needs: [prepare, build]
+    if: success() && needs.prepare.outputs.release_tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.target_sha }}
+          fetch-depth: 0
+
+      - name: Fetch tags for release notes
+        shell: bash
+        run: git fetch --force --tags origin
+
+      - name: Generate release notes
+        shell: bash
+        run: |
+          TAG_NAME="${{ needs.prepare.outputs.release_tag }}"
+          TARGET_SHA="${{ needs.prepare.outputs.target_sha }}"
+          prev_tag="$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || true)"
+          {
+            echo "## Release ${TAG_NAME}"
+            echo
+            echo "Automated source release for tag \`${TAG_NAME}\`."
+            echo
+            echo "Docker images:"
+            echo
+            echo "- \`${GHCR_IMAGE}:${TAG_NAME}\`"
+            echo "- \`${GHCR_IMAGE}:latest\`"
+            echo
+            if [ -n "$prev_tag" ]; then
+              echo "Changes since \`${prev_tag}\`:"
+              echo
+              git log "${prev_tag}..${TARGET_SHA}" --pretty=format:"- %s (%h)"
+            else
+              echo "Initial tagged release in this repository."
+            fi
+          } > release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
+          target_commitish: ${{ needs.prepare.outputs.target_sha }}
+          name: ${{ needs.prepare.outputs.release_tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
