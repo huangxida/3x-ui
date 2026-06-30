@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version_tag:
-        description: "Version tag to build/deploy, for example v3.3.0. Leave empty to use the latest v* tag."
+        description: "Version tag to build/deploy, for example 2026.06.30 or v3.3.0. Leave empty to use the latest release tag."
         required: false
         type: string
       target:
@@ -20,6 +20,7 @@ on:
   push:
     tags:
       - "v*"
+      - "[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]"
 
 concurrency:
   group: deploy-3x-ui
@@ -57,7 +58,15 @@ jobs:
 
           git fetch --force --tags origin
 
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          is_release_tag() {
+            [[ "$1" == v* || "$1" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]
+          }
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            if ! is_release_tag "$GITHUB_REF_NAME"; then
+              echo "Unsupported release tag '${GITHUB_REF_NAME}'. Expected v* or YYYY.MM.DD." >&2
+              exit 1
+            fi
             image_version="${GITHUB_REF_NAME}"
             release_tag="${GITHUB_REF_NAME}"
             target_ref="${GITHUB_REF_NAME}"
@@ -72,7 +81,10 @@ jobs:
               release_tag="$requested_tag"
               target_ref="$requested_tag"
             else
-              latest_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+              latest_tag="$(git tag --list '[0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]' --sort=-v:refname | head -n 1)"
+              if [[ -z "$latest_tag" ]]; then
+                latest_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+              fi
               if [[ -n "$latest_tag" ]]; then
                 image_version="$latest_tag"
                 release_tag="$latest_tag"
@@ -158,7 +170,6 @@ jobs:
             target_json="$(base64 -d <<< "$encoded_target")"
             name="$(jq -r '.name // ""' <<< "$target_json")"
             host="$(jq -r '.host // ""' <<< "$target_json")"
-            port="$(jq -r '.port // ""' <<< "$target_json")"
             user="$(jq -r '.user // ""' <<< "$target_json")"
             key_suffix="$(jq -r '.key_suffix // ""' <<< "$target_json")"
             command="$(jq -r '.command // ""' <<< "$target_json")"
