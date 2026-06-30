@@ -44,8 +44,13 @@ describe('panel release links', () => {
     expect(formatPanelVersionTag('?')).toBe('?');
   });
 
+  it('keeps date release tags intact', () => {
+    expect(formatPanelVersionTag('2026.06.30')).toBe('2026.06.30');
+  });
+
   it('builds release URLs for the fork repository', () => {
     expect(getPanelReleaseUrl('2.9.0')).toBe('https://github.com/huangxida/3x-ui/releases/tag/v2.9.0');
+    expect(getPanelReleaseUrl('2026.06.30')).toBe('https://github.com/huangxida/3x-ui/releases/tag/2026.06.30');
     expect(getPanelReleaseUrl('?')).toBe('https://github.com/huangxida/3x-ui/releases');
   });
 });
@@ -59,6 +64,10 @@ describe('formatPanelVersion', () => {
   it('does not double up the v on already-prefixed tags', () => {
     expect(formatPanelVersion('v3.4.0')).toBe('v3.4.0');
     expect(formatPanelVersion('V3.4.0')).toBe('v3.4.0');
+  });
+
+  it('keeps date release tags without a v prefix', () => {
+    expect(formatPanelVersion('2026.06.30')).toBe('2026.06.30');
   });
 
   it('shows dev builds verbatim without a v prefix', () => {
