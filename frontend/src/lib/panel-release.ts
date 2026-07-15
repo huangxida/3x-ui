@@ -1,4 +1,4 @@
-export const PANEL_REPO_URL = 'https://github.com/huangxida/3x-ui';
+export const PANEL_REPO_URL = 'https://github.com/W1tFzQq08pTv/3x-ui';
 export const PANEL_RELEASES_URL = `${PANEL_REPO_URL}/releases`;
 
 const DATE_RELEASE_TAG_RE = /^\d{4}\.\d{2}\.\d{2}$/;

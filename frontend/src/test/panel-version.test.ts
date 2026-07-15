@@ -49,9 +49,9 @@ describe('panel release links', () => {
   });
 
   it('builds release URLs for the fork repository', () => {
-    expect(getPanelReleaseUrl('2.9.0')).toBe('https://github.com/huangxida/3x-ui/releases/tag/v2.9.0');
-    expect(getPanelReleaseUrl('2026.06.30')).toBe('https://github.com/huangxida/3x-ui/releases/tag/2026.06.30');
-    expect(getPanelReleaseUrl('?')).toBe('https://github.com/huangxida/3x-ui/releases');
+    expect(getPanelReleaseUrl('2.9.0')).toBe('https://github.com/W1tFzQq08pTv/3x-ui/releases/tag/v2.9.0');
+    expect(getPanelReleaseUrl('2026.06.30')).toBe('https://github.com/W1tFzQq08pTv/3x-ui/releases/tag/2026.06.30');
+    expect(getPanelReleaseUrl('?')).toBe('https://github.com/W1tFzQq08pTv/3x-ui/releases');
   });
 });
 

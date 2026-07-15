@@ -36,10 +36,10 @@ func TestCompareVersionStringsRejectsUnexpectedFormats(t *testing.T) {
 }
 
 func TestPanelReleaseURLsUseForkRepository(t *testing.T) {
-	if got, want := panelUpdaterURL(), "https://raw.githubusercontent.com/huangxida/3x-ui/main/update.sh"; got != want {
+	if got, want := panelUpdaterURL(), "https://raw.githubusercontent.com/W1tFzQq08pTv/3x-ui/main/update.sh"; got != want {
 		t.Fatalf("panelUpdaterURL() = %q, want %q", got, want)
 	}
-	if got, want := panelLatestReleaseAPIURL(), "https://api.github.com/repos/huangxida/3x-ui/releases/latest"; got != want {
+	if got, want := panelLatestReleaseAPIURL(), "https://api.github.com/repos/W1tFzQq08pTv/3x-ui/releases/latest"; got != want {
 		t.Fatalf("panelLatestReleaseAPIURL() = %q, want %q", got, want)
 	}
 }
