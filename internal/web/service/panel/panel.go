@@ -39,7 +39,7 @@ type PanelUpdateInfo struct {
 }
 
 const (
-	panelRepository      = "huangxida/3x-ui"
+	panelRepository      = "W1tFzQq08pTv/3x-ui"
 	maxPanelUpdaterBytes = 2 << 20
 	// devReleaseTag is the fixed-tag rolling pre-release the CI force-moves to the
 	// newest main commit; the dev update channel installs from it.

@@ -10,8 +10,8 @@ cur_dir=$(pwd)
 
 xui_folder="${XUI_MAIN_FOLDER:=/usr/local/x-ui}"
 xui_service="${XUI_SERVICE:=/etc/systemd/system}"
-xui_release_repo="${XUI_RELEASE_REPO:-huangxida/3x-ui}"
-xui_raw_repo="${XUI_RAW_REPO:-huangxida/3x-ui}"
+xui_release_repo="${XUI_RELEASE_REPO:-W1tFzQq08pTv/3x-ui}"
+xui_raw_repo="${XUI_RAW_REPO:-W1tFzQq08pTv/3x-ui}"
 
 # check root
 [[ $EUID -ne 0 ]] && echo -e "${red}Fatal error: ${plain} Please run this script with root privilege \n " && exit 1
